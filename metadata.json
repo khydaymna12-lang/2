@@ -1,0 +1,6 @@
+{
+  "name": "English Placement Test",
+  "description": "An advanced, AI-powered English Placement Test supporting Listening, Reading, Writing, and Speaking with complete translation and comprehensive diagnostics.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

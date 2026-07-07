@@ -1,0 +1,179 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Catch-all default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "khydaymna12@gmail.com"
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Collection validation schema blueprints
+
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 5
+        && data.id == request.auth.uid
+        && data.name is string && data.name.size() <= 100
+        && data.email is string && data.email.size() <= 100;
+    }
+
+    function isValidCandidate(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'language', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 14
+        && data.uid is string
+        && data.name is string && data.name.size() <= 150
+        && data.email is string && data.email.size() <= 150
+        && data.role == 'student'
+        && data.language in ['en', 'vi'];
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll(['testDuration', 'passingScore', 'allowSkipSections', 'activeSections'])
+        && data.testDuration is int && data.testDuration > 0 && data.testDuration <= 180
+        && data.passingScore is int && data.passingScore >= 0 && data.passingScore <= 100
+        && data.allowSkipSections is bool
+        && data.activeSections is list;
+    }
+
+    function isValidMaterial(data) {
+      return data.keys().hasAll(['id', 'listeningAudioUrl', 'listeningQuestions', 'readingPassages', 'writingPrompt', 'speakingPrompt'])
+        && data.id is string && data.id.size() <= 100
+        && data.listeningAudioUrl is string && data.listeningAudioUrl.size() <= 1000
+        && data.listeningQuestions is list
+        && data.readingPassages is list
+        && data.writingPrompt is string && data.writingPrompt.size() <= 2000
+        && data.speakingPrompt is string && data.speakingPrompt.size() <= 2000;
+    }
+
+    function isValidExam(data) {
+      return data.keys().hasAll(['id', 'candidateId', 'status', 'startTime', 'timeLeft', 'answers', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 100
+        && data.candidateId is string
+        && data.status in ['ongoing', 'completed']
+        && data.timeLeft is int
+        && data.answers is map;
+    }
+
+    function isValidWriting(data) {
+      return data.keys().hasAll(['id', 'examId', 'candidateId', 'essayAnswer', 'score', 'maxScore', 'band', 'feedback', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 100
+        && data.examId is string && data.examId.size() <= 100
+        && data.candidateId is string
+        && data.essayAnswer is string && data.essayAnswer.size() <= 15000
+        && data.score is int
+        && data.maxScore is int
+        && data.band is string && data.band.size() <= 10
+        && data.feedback is string && data.feedback.size() <= 5000;
+    }
+
+    function isValidSpeaking(data) {
+      return data.keys().hasAll(['id', 'examId', 'candidateId', 'score', 'maxScore', 'band', 'feedback', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 100
+        && data.examId is string && data.examId.size() <= 100
+        && data.candidateId is string
+        && data.score is int
+        && data.maxScore is int
+        && data.band is string && data.band.size() <= 10
+        && data.feedback is string && data.feedback.size() <= 5000;
+    }
+
+    function isValidResult(data) {
+      return data.keys().hasAll(['id', 'candidateId', 'candidateName', 'candidateEmail', 'examId', 'listening', 'reading', 'writingId', 'speakingId', 'overallCEFR', 'status', 'gradedBy', 'createdAt', 'completedAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 100
+        && data.candidateId is string && data.candidateId.size() <= 100
+        && data.candidateName is string && data.candidateName.size() <= 150
+        && data.candidateEmail is string && data.candidateEmail.size() <= 150
+        && data.examId is string && data.examId.size() <= 100
+        && data.listening is map
+        && data.reading is map
+        && data.writingId is string && data.writingId.size() <= 100
+        && data.speakingId is string && data.speakingId.size() <= 100
+        && data.overallCEFR is string && data.overallCEFR.size() <= 10
+        && data.status in ['pending', 'completed']
+        && data.gradedBy in ['auto', 'ai', 'admin'];
+    }
+
+    // Rules matching individual collections
+
+    match /admins/{adminId} {
+      allow get: if isOwner(adminId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(adminId) && isValidAdmin(incoming());
+      allow update: if isOwner(adminId) && isValidAdmin(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /candidates/{candidateId} {
+      allow get, create: if true;
+      allow list: if isAdmin();
+      allow update: if isAdmin() || (isValidCandidate(incoming()) && incoming().createdAt == existing().createdAt);
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingsId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidSettings(incoming());
+    }
+
+    match /materials/{materialId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidMaterial(incoming());
+    }
+
+    match /exams/{examId} {
+      allow get, list, create: if true;
+      allow update: if isAdmin() || (isValidExam(incoming()) && incoming().createdAt == existing().createdAt);
+      allow delete: if isAdmin();
+    }
+
+    match /writing/{writingId} {
+      allow get, list, create: if true;
+      allow update: if isAdmin() || (isValidWriting(incoming()) && incoming().createdAt == existing().createdAt);
+      allow delete: if isAdmin();
+    }
+
+    match /speaking/{speakingId} {
+      allow get, list, create: if true;
+      allow update: if isAdmin() || (isValidSpeaking(incoming()) && incoming().createdAt == existing().createdAt);
+      allow delete: if isAdmin();
+    }
+
+    match /results/{resultId} {
+      allow get, list, create: if true;
+      allow update: if isAdmin() || (isValidResult(incoming()) && incoming().createdAt == existing().createdAt);
+      allow delete: if isAdmin();
+    }
+  }
+}

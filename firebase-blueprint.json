@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "AdminProfile": {
+      "title": "AdminProfile",
+      "description": "Administrator user profile data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The Firebase Auth user ID of the admin" },
+        "name": { "type": "string", "description": "Display name of the administrator" },
+        "email": { "type": "string", "description": "E-mail address of the administrator" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the administrator profile was created" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "When the administrator profile was last updated" }
+      },
+      "required": ["id", "name", "email", "createdAt", "updatedAt"]
+    },
+    "CandidateProfile": {
+      "title": "CandidateProfile",
+      "description": "Linguistic assessment candidate student profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The Firebase Auth user ID" },
+        "name": { "type": "string", "description": "Full name of the candidate" },
+        "email": { "type": "string", "description": "Candidate email address" },
+        "phone": { "type": "string", "description": "Candidate phone number" },
+        "role": { "type": "string", "enum": ["student"], "description": "System role" },
+        "language": { "type": "string", "enum": ["en", "vi"], "description": "Preferred portal language" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Time of candidate registration" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Time of last profile update" },
+        "targetScore": { "type": "string", "description": "Linguistic target score" },
+        "targetLevel": { "type": "string", "description": "Target CEFR Level (e.g. B2)" }
+      },
+      "required": ["uid", "name", "email", "role", "language", "createdAt", "updatedAt"]
+    },
+    "TestSettings": {
+      "title": "TestSettings",
+      "description": "Global assessment parameters and limits",
+      "type": "object",
+      "properties": {
+        "testDuration": { "type": "integer", "description": "Test length in minutes" },
+        "passingScore": { "type": "integer", "description": "Minimum score percentage required" },
+        "allowSkipSections": { "type": "boolean", "description": "Whether candidates can move ahead without answering" },
+        "activeSections": { "type": "array", "description": "List of active modules (listening, reading, writing, speaking)" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["testDuration", "passingScore", "allowSkipSections", "activeSections"]
+    },
+    "TestMaterial": {
+      "title": "TestMaterial",
+      "description": "Active reading passages, audio resources, prompts and correct key mappings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique material catalog reference ID" },
+        "listeningAudioUrl": { "type": "string", "description": "Active audio track URL" },
+        "listeningQuestions": { "type": "array", "description": "Structured multiple-choice or gap-fill auditory tasks" },
+        "readingPassages": { "type": "array", "description": "Reading passages containing textual material and companion tests" },
+        "writingPrompt": { "type": "string", "description": "Prompt for essay segment" },
+        "writingTargetWords": { "type": "integer", "description": "Target minimum essays words limit" },
+        "speakingPrompt": { "type": "string", "description": "Prompt for spoken segment" },
+        "speakingPreparationTime": { "type": "integer", "description": "Preparation segment duration" },
+        "speakingRecordingTime": { "type": "integer", "description": "Active recording window in seconds" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "listeningAudioUrl", "listeningQuestions", "readingPassages", "writingPrompt", "speakingPrompt"]
+    },
+    "TestSession": {
+      "title": "TestSession",
+      "description": "A single candidate's exam session session tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique UUID of the exam" },
+        "candidateId": { "type": "string", "description": "Owner UID referencing the candidate" },
+        "status": { "type": "string", "enum": ["ongoing", "completed"], "description": "State of test" },
+        "startTime": { "type": "string", "format": "date-time", "description": "Timestamp when the exam started" },
+        "endTime": { "type": "string", "format": "date-time", "description": "Timestamp when submitted" },
+        "timeLeft": { "type": "integer", "description": "Seconds remaining" },
+        "answers": { "type": "object", "description": "Audit trail of candidate answers" },
+        "writingId": { "type": "string", "description": "Reference UUID of the companion writing submission doc" },
+        "speakingId": { "type": "string", "description": "Reference UUID of the companion speaking submission doc" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "candidateId", "status", "startTime", "timeLeft", "answers", "createdAt", "updatedAt"]
+    },
+    "WritingSubmission": {
+      "title": "WritingSubmission",
+      "description": "Candidate essay answer and AI analysis breakdown",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique UUID of the writing sheet" },
+        "examId": { "type": "string", "description": "Companion exam UUID" },
+        "candidateId": { "type": "string", "description": "Reference candidate UID" },
+        "essayAnswer": { "type": "string", "description": "Plain text of candidate response" },
+        "aiEvaluation": { "type": "object", "description": "AI analysis scoring rubrics" },
+        "score": { "type": "integer", "description": "Evaluated score" },
+        "maxScore": { "type": "integer", "description": "Max scoring limit" },
+        "band": { "type": "string", "description": "Equivalent writing CEFR band" },
+        "feedback": { "type": "string", "description": "Diagnostic details" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "examId", "candidateId", "essayAnswer", "score", "maxScore", "band", "feedback", "createdAt", "updatedAt"]
+    },
+    "SpeakingSubmission": {
+      "title": "SpeakingSubmission",
+      "description": "Candidate verbal answer recording, transcription and AI scoring metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique UUID of the spoken sheet" },
+        "examId": { "type": "string", "description": "Companion exam UUID" },
+        "candidateId": { "type": "string", "description": "Reference candidate UID" },
+        "speakingAudioUrl": { "type": "string", "description": "Public URL of candidate's voice clip" },
+        "speakingTranscript": { "type": "string", "description": "Transcribed copy of the speaking content" },
+        "aiEvaluation": { "type": "object", "description": "Evaluation rubrics" },
+        "score": { "type": "integer", "description": "Evaluated score" },
+        "maxScore": { "type": "integer", "description": "Max scoring limit" },
+        "band": { "type": "string", "description": "Equivalent speaking CEFR band" },
+        "feedback": { "type": "string", "description": "Linguistic comments" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "examId", "candidateId", "score", "maxScore", "band", "feedback", "createdAt", "updatedAt"]
+    },
+    "TestResult": {
+      "title": "TestResult",
+      "description": "Consolidated scoring and diagnostic record file",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique result UUID" },
+        "candidateId": { "type": "string", "description": "Reference candidate UID" },
+        "candidateName": { "type": "string", "description": "Cached candidate display name" },
+        "candidateEmail": { "type": "string", "description": "Cached candidate email" },
+        "candidatePhone": { "type": "string", "description": "Cached candidate phone number" },
+        "examId": { "type": "string", "description": "Reference exam UUID" },
+        "listening": { "type": "object", "description": "Listening performance" },
+        "reading": { "type": "object", "description": "Reading performance" },
+        "writingId": { "type": "string", "description": "Reference UUID to the writing collection record" },
+        "speakingId": { "type": "string", "description": "Reference UUID to the speaking collection record" },
+        "overallCEFR": { "type": "string", "description": "A1-C2 final score" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "gradedBy": { "type": "string", "enum": ["auto", "ai", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "candidateId", "candidateName", "candidateEmail", "examId", "listening", "reading", "writingId", "speakingId", "overallCEFR", "status", "gradedBy", "createdAt", "completedAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminProfile" },
+      "description": "Root collection for administrator profile accounts"
+    },
+    "/candidates/{candidateId}": {
+      "schema": { "$ref": "#/entities/CandidateProfile" },
+      "description": "Root collection for registered candidate student user profiles"
+    },
+    "/settings/{settingsId}": {
+      "schema": { "$ref": "#/entities/TestSettings" },
+      "description": "Root configurations for the placement application"
+    },
+    "/materials/{materialId}": {
+      "schema": { "$ref": "#/entities/TestMaterial" },
+      "description": "Root collection storing placement exam tasks and correct options keys"
+    },
+    "/exams/{examId}": {
+      "schema": { "$ref": "#/entities/TestSession" },
+      "description": "Root collection containing ongoing or submitted student exam tracks"
+    },
+    "/writing/{writingId}": {
+      "schema": { "$ref": "#/entities/WritingSubmission" },
+      "description": "Root collection storing writing responses, grades, and companion AI reviews"
+    },
+    "/speaking/{speakingId}": {
+      "schema": { "$ref": "#/entities/SpeakingSubmission" },
+      "description": "Root collection storing speech items, transcripts, scores, and companion AI analysis"
+    },
+    "/results/{resultId}": {
+      "schema": { "$ref": "#/entities/TestResult" },
+      "description": "Root collection containing finalized placement audit logs and aggregate benchmarks"
+    }
+  }
+}
